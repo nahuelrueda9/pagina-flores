@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Para el amor de mi vida 💛</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800;900&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet">
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+  <style>
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body, html {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background-color: #030202;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      color: #fff;
+    }
+
+    #webgl-canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+    }
+
+    /* PANTALLA INICIAL */
+    #start-screen {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: radial-gradient(circle at center, #1b1203 0%, #080501 65%, #000000 100%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: opacity 1.2s ease, visibility 1.2s;
+    }
+
+    #start-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .intro-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.55rem;
+      font-weight: 800;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: #fffbe6;
+      text-shadow: 0 0 16px rgba(255, 215, 0, 0.9), 0 0 35px rgba(255, 170, 0, 0.6);
+      margin-bottom: 26px;
+    }
+
+    .intro-flower-box {
+      width: 130px;
+      height: 130px;
+      animation: emergeUp 2.8s cubic-bezier(0.16, 1, 0.3, 1) forwards, floatPulse 3s 2.8s infinite ease-in-out;
+      filter: drop-shadow(0 0 25px rgba(255, 208, 0, 0.85));
+    }
+
+    @keyframes emergeUp {
+      0% {
+        transform: translateY(120px) scale(0.3);
+        opacity: 0;
+      }
+      70% {
+        transform: translateY(-10px) scale(1.08);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+      }
+    }
+
+    @keyframes floatPulse {
+      0%, 100% { transform: translateY(0) scale(1); filter: drop-shadow(0 0 20px #ffd000); }
+      50% { transform: translateY(-8px) scale(1.06); filter: drop-shadow(0 0 35px #ffea00); }
+    }
+
+    .tap-hint {
+      margin-top: 24px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      color: #ffdf7a;
+      text-transform: uppercase;
+      opacity: 0.85;
+      animation: pulseText 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulseText {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
+    }
+
+    /* CONTENEDOR FLOTANTE DE LA FOTO Y CONTROLES */
+    #photo-card-container {
+      position: fixed;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      z-index: 40;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+      width: 90%;
+      max-width: 440px;
+    }
+
+    #photo-card-container.visible {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .golden-frame {
+      width: 100%;
+      max-width: 380px;
+      aspect-ratio: 4 / 5;
+      padding: 7px;
+      background: linear-gradient(135deg, #ffd700 0%, #ffae00 50%, #fff275 100%);
+      border-radius: 20px;
+      box-shadow: 0 0 35px rgba(255, 215, 0, 0.7), 0 25px 50px rgba(0, 0, 0, 0.95);
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .golden-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 14px;
+      background-color: #120b02;
+      display: block;
+    }
+
+    .story-card {
+      margin-top: 14px;
+      background: rgba(18, 12, 3, 0.88);
+      border: 1px solid rgba(255, 215, 0, 0.5);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.9), 0 0 25px rgba(255, 208, 0, 0.25);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-radius: 20px;
+      padding: 16px 20px;
+      text-align: center;
+      width: 100%;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .story-card p {
+      font-size: 0.92rem;
+      line-height: 1.55;
+      font-weight: 700;
+      color: #fffaf0;
+      text-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+      white-space: pre-line;
+    }
+
+    /* BOTONES COMPACTOS */
+    .controls-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      margin-top: 14px;
+      gap: 22px;
+    }
+
+    .icon-btn {
+      width: 58px;
+      height: 48px;
+      border-radius: 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      font-size: 1.25rem;
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .icon-btn.prev {
+      background: rgba(255, 215, 0, 0.12);
+      border: 1px solid rgba(255, 215, 0, 0.38);
+      color: #ffe680;
+    }
+
+    .icon-btn.prev:hover:not(:disabled) {
+      background: rgba(255, 215, 0, 0.25);
+      border-color: #ffd000;
+      transform: translateY(-2px) scale(1.05);
+      box-shadow: 0 0 16px rgba(255, 208, 0, 0.35);
+    }
+
+    .icon-btn.next {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.35) 0%, rgba(245, 158, 11, 0.45) 100%);
+      border: 1px solid rgba(255, 230, 100, 0.7);
+      color: #ffffff;
+      box-shadow: 0 0 20px rgba(255, 200, 0, 0.4);
+    }
+
+    .icon-btn.next:hover {
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.55) 0%, rgba(245, 158, 11, 0.65) 100%);
+      transform: translateY(-2px) scale(1.08);
+      box-shadow: 0 0 28px rgba(255, 215, 0, 0.65);
+    }
+
+    .icon-btn:active {
+      transform: scale(0.94);
+    }
+
+    .icon-btn:disabled {
+      opacity: 0.25;
+      pointer-events: none;
+    }
+
+    /* PANTALLA FINAL */
+    #final-cta {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.85);
+      z-index: 50;
+      text-align: center;
+      width: 90%;
+      max-width: 600px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 1.5s cubic-bezier(0.16, 1, 0.3, 1), transform 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    #final-cta.visible {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    .final-badge {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 3.8rem;
+      font-weight: 900;
+      color: #fffef2;
+      letter-spacing: 0.1em;
+      text-shadow: 
+        0 0 15px #ffd000, 
+        0 0 35px #ffae00, 
+        0 0 70px #ff8c00;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      animation: heartbeat 2.2s infinite ease-in-out;
+    }
+
+    .heart-glow {
+      display: inline-block;
+      filter: drop-shadow(0 0 22px #ffc400);
+      transform-origin: center;
+    }
+
+    @keyframes heartbeat {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.06); }
+    }
+
+    @media (max-width: 480px) {
+      .golden-frame { max-width: 290px; }
+      .story-card { padding: 12px 16px; max-height: 160px; }
+      .story-card p { font-size: 0.82rem; line-height: 1.45; }
+      .icon-btn { width: 52px; height: 44px; font-size: 1.15rem; }
+      .final-badge { font-size: 2.6rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Audio de fondo -->
+  <audio id="bg-music" src="musica.mp3" loop preload="auto"></audio>
+
+  <!-- PANTALLA INICIAL -->
+  <div id="start-screen">
+    <div class="intro-title">Empezar el viaje</div>
+
+    <div class="intro-flower-box">
+      <svg viewBox="0 0 100 100" width="100%" height="100%">
+        <g transform="translate(50,50)">
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffd000" transform="rotate(0)"/>
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffb700" transform="rotate(45)"/>
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffd000" transform="rotate(90)"/>
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffb700" transform="rotate(135)"/>
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffd000" transform="rotate(180)"/>
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffb700" transform="rotate(225)"/>
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffd000" transform="rotate(270)"/>
+          <path d="M 0,0 C -15,-20 -20,-45 0,-48 C 20,-45 15,-20 0,0" fill="#ffb700" transform="rotate(315)"/>
+          <circle cx="0" cy="0" r="14" fill="#3b1d03"/>
+          <circle cx="0" cy="0" r="10" fill="#241001"/>
+        </g>
+      </svg>
+    </div>
+
+    <div class="tap-hint">Toca la pantalla para comenzar</div>
+  </div>
+
+  <!-- FOTO REAL CON BOTONES DE NAVEGACIÓN -->
+  <div id="photo-card-container">
+    <div class="golden-frame">
+      <img id="active-photo" src="" alt="Recuerdo" />
+    </div>
+    <div class="story-card">
+      <p id="story-text">...</p>
+      
+      <div class="controls-row">
+        <button class="icon-btn prev" id="btn-prev" title="Volver al recuerdo anterior">
+          <span>❮</span> <span>🌻</span>
+        </button>
+        <button class="icon-btn next" id="btn-next" title="Siguiente recuerdo">
+          <span>💛</span> <span>❯</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CIERRE FINAL: "GRACIAS 💛" -->
+  <div id="final-cta">
+    <div class="final-badge">
+      <span>Gracias</span>
+      <span class="heart-glow">💛</span>
+    </div>
+  </div>
+
+  <canvas id="webgl-canvas"></canvas>
+
+  <script>
+    /* ==========================================================================
+       1. TEXTOS ACTUALIZADOS
+       ========================================================================== */
+    const STORY_STOPS = [
+      {
+        z: -180,
+        photoBase: 'foto1',
+        text: "Gracias por tantos viajes, por cada momento que me hiciste vivir, por la felicidad, risa, momentos que nunca pero nunca voy a olvidar, gracias por enseñarme a sentir y saber lo que es tener una familia."
+      },
+      {
+        z: -380,
+        photoBase: 'foto2',
+        text: "Gracias por cada beso, por cada caricia, por tu cariño, por quererme y amarme, por dejarme amarte, por cada abrazo, por cada agarrada de mano, por cada sonrisa, por cada mensaje, por cada llamada, por cada foto enviada"
+      },
+      {
+        z: -580,
+        photoBase: 'foto3',
+        text: "Gracias por ayudarme a estar con vos, por dar tu plata para que podamos estar y pasar tiempo juntos, por pagarme todo lo que me diste, y eso siempre voy a estar agradecido y como te prometí una vez, te iba a devolver lo que un día gastaste en mi, aunque me costaba recibir y que gastes todo lo que gastabas en mi yo siempre quise devolverte todo y prometí devolverte todo, nunca te pude dar lo que realmente merecías y todo los días me dolía y me quebraba, perdón por no tener para darte todo lo que te merecías, perdón."
+      },
+      {
+        z: -780,
+        photoBase: 'foto4',
+        text: "Sos hermosa de pies a cabeza, siempre me encanto tu sonrisa siempre me va a encantar, amo tus cachetes amo tu cuerpo tal cual es, me encanta, y siempre vas a ser hermosa, como desde el primer día en que me di cuenta de que me encantaba mirarte y ya desde ese día nunca deje de mirarte y admirar la persona hermosa que sos en todos los sentidos posibles."
+      },
+      {
+        z: -980,
+        photoBase: 'foto5',
+        text: "estoy feliz de haber estado con vos todo este tiempo, en haberte acompañado en todos tus triunfos, en decirte que estoy orgulloso de vos desde el día que te conocí estoy orgulloso de vos, perdón por ser un fracasado pero al menos vos lograste todo lo que te prometiste, y me alegra haberte apoyado con palabras aunque sea en todo lo que hacías y todo te salía bien. Y mira ahora donde estas? sos una increíble mujer. La mejor cheff y jefa."
+      },
+      {
+        z: -1180,
+        photoBase: 'foto6',
+        text: "¡Gracias por TODO! y te amo te amo muchísimo, me quedaron tantas palabras por decir y tengo tanto para decirte que lo único que me sale en estos momentos es decirte Te amo, sos el amor de mi vida, te pido perdón por no ser el hombre que merecías, por ser un peso en tu vida, por no poder lograr todo lo que te prometí, por ser una molestia y hacer sentir incomodidad en tu casa y en tu familia, perdón por no hacerte feliz, te extraño demasiado, y como me dijiste la ultima vez ahora me toca sufrir a mi todo y lo estoy pagando... quizas ya no me vuelvas a amar nunca mas, gracias por haberme amado una vez por que esa vez fui el hombre mas feliz, doy gracias a dios que tenes un refugio donde hablar y apoyo que te dan tu familia y amigos, yo solo te tenia a vos... la muerte no avisa asique por si acaso fuiste la mujer que mas amo y amé en mi vida."
+      },
+      {
+        z: -1380,
+        photoBase: 'foto7',
+        text: "GRACIAS POR TODO, PERDON POR TAN POCO. TE AMO AMOR DE MI VIDA"
+      }
+    ];
+
+    const JOURNEY_PHRASES = [
+      "Sos hermosa",
+      "Sos todo",
+      "Sos mi felicidad",
+      "Te amo",
+      "Sos mi vida",
+      "Te extraño",
+      "Sos lo mejor que me pasó",
+      "Gracias",
+      "Gracias por todo",
+      "Perdón",
+      "Amor de mi vida",
+      "Amor de mi alma",
+      "Te amo"
+    ];
+
+    /* ==========================================================================
+       2. FLORES BOTÁNICAS Y PÉTALOS
+       ========================================================================== */
+    function makePetalTexture() {
+      const c = document.createElement('canvas');
+      c.width = 256;
+      c.height = 256;
+      const ctx = c.getContext('2d');
+      ctx.translate(128, 128);
+
+      ctx.beginPath();
+      ctx.moveTo(0, -90);
+      ctx.bezierCurveTo(-55, -40, -45, 60, 0, 95);
+      ctx.bezierCurveTo(45, 60, 55, -40, 0, -90);
+      const g = ctx.createLinearGradient(0, -90, 0, 95);
+      g.addColorStop(0, '#fffbeb');
+      g.addColorStop(0.3, '#fef08a');
+      g.addColorStop(0.7, '#f59e0b');
+      g.addColorStop(1, '#b45309');
+      ctx.fillStyle = g;
+      ctx.fill();
+
+      ctx.strokeStyle = 'rgba(217, 119, 6, 0.4)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(0, -70);
+      ctx.lineTo(0, 80);
+      ctx.stroke();
+
+      return new THREE.CanvasTexture(c);
+    }
+
+    function makeArtisticFlowerTexture(kind) {
+      const c = document.createElement('canvas');
+      c.width = 1024;
+      c.height = 1024;
+      const ctx = c.getContext('2d');
+      ctx.translate(512, 512);
+
+      if (kind === 'sunflower') {
+        for (let l = 0; l < 2; l++) {
+          const count = 28;
+          const len = l === 0 ? 460 : 380;
+          for (let i = 0; i < count; i++) {
+            ctx.save();
+            ctx.rotate((i * Math.PI * 2) / count + l * 0.11);
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.bezierCurveTo(-45, -len * 0.5, -35, -len * 0.85, 0, -len);
+            ctx.bezierCurveTo(35, -len * 0.85, 45, -len * 0.5, 0, 0);
+            const grad = ctx.createLinearGradient(0, 0, 0, -len);
+            grad.addColorStop(0, '#b45309');
+            grad.addColorStop(0.3, '#f59e0b');
+            grad.addColorStop(0.7, '#fde047');
+            grad.addColorStop(1, '#fef9c3');
+            ctx.fillStyle = grad;
+            ctx.fill();
+            ctx.strokeStyle = '#78350f';
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
+          }
+        }
+        ctx.beginPath();
+        ctx.arc(0, 0, 160, 0, Math.PI * 2);
+        const cGrad = ctx.createRadialGradient(0, 0, 20, 0, 0, 160);
+        cGrad.addColorStop(0, '#1c0f06');
+        cGrad.addColorStop(0.7, '#3b1d07');
+        cGrad.addColorStop(1, '#78350f');
+        ctx.fillStyle = cGrad;
+        ctx.fill();
+        for (let s = 0; s < 180; s++) {
+          const r = Math.sqrt(s / 180) * 145;
+          const a = s * 2.39996;
+          ctx.beginPath();
+          ctx.arc(Math.cos(a) * r, Math.sin(a) * r, 3, 0, Math.PI * 2);
+          ctx.fillStyle = 'rgba(251, 191, 36, 0.6)';
+          ctx.fill();
+        }
+
+      } else if (kind === 'cosmos') {
+        const count = 8;
+        for (let i = 0; i < count; i++) {
+          ctx.save();
+          ctx.rotate((i * Math.PI * 2) / count);
+          ctx.beginPath();
+          ctx.moveTo(0, 0);
+          ctx.bezierCurveTo(-140, -120, -150, -320, -50, -420);
+          ctx.bezierCurveTo(0, -440, 50, -420, 150, -320);
+          ctx.bezierCurveTo(140, -120, 40, -40, 0, 0);
+          const pGrad = ctx.createLinearGradient(0, 0, 0, -430);
+          pGrad.addColorStop(0, '#ea580c');
+          pGrad.addColorStop(0.4, '#f59e0b');
+          pGrad.addColorStop(1, '#fef08a');
+          ctx.fillStyle = pGrad;
+          ctx.fill();
+          ctx.strokeStyle = '#b45309';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.beginPath();
+        ctx.arc(0, 0, 45, 0, Math.PI * 2);
+        ctx.fillStyle = '#451a03';
+        ctx.fill();
+
+      } else if (kind === 'daisy') {
+        const count = 20;
+        for (let i = 0; i < count; i++) {
+          ctx.save();
+          ctx.rotate((i * Math.PI * 2) / count);
+          ctx.beginPath();
+          ctx.ellipse(0, -220, 36, 210, 0, 0, Math.PI * 2);
+          const dGrad = ctx.createLinearGradient(0, 0, 0, -430);
+          dGrad.addColorStop(0, '#d97706');
+          dGrad.addColorStop(0.5, '#fde047');
+          dGrad.addColorStop(1, '#ffffff');
+          ctx.fillStyle = dGrad;
+          ctx.fill();
+          ctx.strokeStyle = '#92400e';
+          ctx.lineWidth = 3;
+          ctx.stroke();
+          ctx.restore();
+        }
+        ctx.beginPath();
+        ctx.arc(0, 0, 110, 0, Math.PI * 2);
+        ctx.fillStyle = '#f59e0b';
+        ctx.fill();
+
+      } else if (kind === 'carnation') {
+        const layers = [
+          { c: 18, r: 340, w: 85, h: 100, c1: '#ca8a04', c2: '#fde047' },
+          { c: 14, r: 250, w: 75, h: 90, c1: '#eab308', c2: '#fef08a' },
+          { c: 10, r: 160, w: 60, h: 75, c1: '#f59e0b', c2: '#fffbeb' }
+        ];
+        layers.forEach(l => {
+          for (let i = 0; i < l.c; i++) {
+            ctx.save();
+            ctx.rotate((i * Math.PI * 2) / l.c);
+            ctx.beginPath();
+            ctx.ellipse(0, -l.r, l.w, l.h, 0, 0, Math.PI * 2);
+            ctx.fillStyle = l.c2;
+            ctx.fill();
+            ctx.strokeStyle = l.c1;
+            ctx.lineWidth = 4;
+            ctx.stroke();
+            ctx.restore();
+          }
+        });
+        ctx.beginPath();
+        ctx.arc(0, 0, 60, 0, Math.PI * 2);
+        ctx.fillStyle = '#b45309';
+        ctx.fill();
+
+      } else {
+        ctx.save();
+        ctx.strokeStyle = '#15803d';
+        ctx.lineWidth = 16;
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        ctx.moveTo(-40, 240); ctx.lineTo(-15, 0);
+        ctx.moveTo(0, 250); ctx.lineTo(0, -20);
+        ctx.moveTo(40, 240); ctx.lineTo(15, 0);
+        ctx.stroke();
+
+        const blooms = [
+          { x: -90, y: -70, r: -0.28 },
+          { x: 90, y: -70, r: 0.28 },
+          { x: 0, y: -130, r: 0 },
+          { x: -45, y: -170, r: -0.12 },
+          { x: 45, y: -170, r: 0.12 }
+        ];
+        blooms.forEach(b => {
+          ctx.save();
+          ctx.translate(b.x, b.y);
+          ctx.rotate(b.r);
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 52, 78, 0, 0, Math.PI * 2);
+          const tGrad = ctx.createLinearGradient(0, 78, 0, -78);
+          tGrad.addColorStop(0, '#ea580c');
+          tGrad.addColorStop(0.5, '#facc15');
+          tGrad.addColorStop(1, '#fef08a');
+          ctx.fillStyle = tGrad;
+          ctx.fill();
+          ctx.strokeStyle = '#b45309';
+          ctx.lineWidth = 4;
+          ctx.stroke();
+          ctx.restore();
+        });
+        ctx.restore();
+      }
+
+      return new THREE.CanvasTexture(c);
+    }
+
+    function makeWordTexture(text) {
+      const c = document.createElement('canvas');
+      c.width = 1600;
+      c.height = 320;
+      const ctx = c.getContext('2d');
+      ctx.font = '900 66px "Plus Jakarta Sans", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      ctx.shadowColor = '#ffd000';
+      ctx.shadowBlur = 30;
+      ctx.fillStyle = '#ffe500';
+      ctx.fillText(text.toUpperCase(), 800, 160);
+
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(text.toUpperCase(), 800, 160);
+
+      return new THREE.CanvasTexture(c);
+    }
+
+    /* ==========================================================================
+       3. CONFIGURACIÓN THREE.JS
+       ========================================================================== */
+    const canvas = document.getElementById('webgl-canvas');
+    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    scene.fog = new THREE.FogExp2(0x030202, 0.007);
+
+    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 1600);
+    camera.position.set(0, 0, 10);
+
+    // RAYOS DE VELOCIDAD
+    const warpGeo = new THREE.BufferGeometry();
+    const warpCount = 500;
+    const warpPos = new Float32Array(warpCount * 6);
+    for (let i = 0; i < warpCount; i++) {
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 8 + Math.random() * 26;
+      const z = -Math.random() * 1500;
+      const len = 14 + Math.random() * 24;
+      const x = Math.cos(ang) * rad;
+      const y = Math.sin(ang) * rad;
+
+      warpPos[i * 6] = x;
+      warpPos[i * 6 + 1] = y;
+      warpPos[i * 6 + 2] = z;
+      warpPos[i * 6 + 3] = x;
+      warpPos[i * 6 + 4] = y;
+      warpPos[i * 6 + 5] = z - len;
+    }
+    warpGeo.setAttribute('position', new THREE.BufferAttribute(warpPos, 3));
+    const warpLines = new THREE.LineSegments(
+      warpGeo,
+      new THREE.LineBasicMaterial({ color: 0xffd000, transparent: true, opacity: 0.5 })
+    );
+    scene.add(warpLines);
+
+    // LLUVIA DE PÉTALOS
+    const petalTex = makePetalTexture();
+    const petalGroup = new THREE.Group();
+    scene.add(petalGroup);
+    for (let i = 0; i < 450; i++) {
+      const pMat = new THREE.SpriteMaterial({ map: petalTex, transparent: true, opacity: 0.9 });
+      const petal = new THREE.Sprite(pMat);
+      petal.position.set(
+        (Math.random() - 0.5) * 44,
+        (Math.random() - 0.5) * 44,
+        -Math.random() * 1500
+      );
+      const s = 1.4 + Math.random() * 1.6;
+      petal.scale.set(s, s, 1);
+      petal.userData = {
+        spin: (Math.random() - 0.5) * 0.04,
+        driftX: (Math.random() - 0.5) * 0.03,
+        driftY: (Math.random() - 0.5) * 0.03
+      };
+      petalGroup.add(petal);
+    }
+
+    // FLORES BOTÁNICAS
+    const flowerKinds = ['sunflower', 'cosmos', 'daisy', 'carnation', 'bouquet'];
+    const flowerTextures = flowerKinds.map(k => makeArtisticFlowerTexture(k));
+
+    for (let i = 0; i < 180; i++) {
+      const tex = flowerTextures[i % flowerTextures.length];
+      const fSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true }));
+      const ang = Math.random() * Math.PI * 2;
+      const rad = 8 + Math.random() * 22;
+      fSprite.position.set(
+        Math.cos(ang) * rad,
+        Math.sin(ang) * rad,
+        -Math.random() * 1450
+      );
+      const s = 5.0 + Math.random() * 4.0;
+      fSprite.scale.set(s, s, 1);
+      scene.add(fSprite);
+    }
+
+    // PALABRAS VOLADORAS
+    const TOTAL_WORDS = 75;
+    for (let i = 0; i < TOTAL_WORDS; i++) {
+      const word = JOURNEY_PHRASES[i % JOURNEY_PHRASES.length];
+      const tex = makeWordTexture(word);
+      const wSprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false }));
+
+      const side = i % 2 === 0 ? 1 : -1;
+      const x = side * (14 + Math.random() * 8);
+      const y = (Math.random() - 0.5) * 10;
+      let z = -50 - (i / TOTAL_WORDS) * 1400;
+
+      STORY_STOPS.forEach(stop => {
+        if (Math.abs(z - stop.z) < 30) z -= 35;
+      });
+
+      wSprite.position.set(x, y, z);
+      wSprite.scale.set(17, 3.4, 1);
+      scene.add(wSprite);
+    }
+
+    /* ==========================================================================
+       4. CONTROLADOR DE FOTOS Y NAVEGACIÓN
+       ========================================================================== */
+    const audio = document.getElementById('bg-music');
+    const startScreen = document.getElementById('start-screen');
+    const photoCard = document.getElementById('photo-card-container');
+    const activePhoto = document.getElementById('active-photo');
+    const storyText = document.getElementById('story-text');
+    const finalCta = document.getElementById('final-cta');
+    const btnPrev = document.getElementById('btn-prev');
+    const btnNext = document.getElementById('btn-next');
+
+    const EXTENSIONS = ['.jpg', '.jpeg', '.png', '.JPG', '.PNG', '.JPEG'];
+    function setSafeImage(baseName) {
+      let idx = 0;
+      function attempt() {
+        if (idx >= EXTENSIONS.length) return;
+        const testImg = new Image();
+        testImg.onload = () => {
+          activePhoto.src = baseName + EXTENSIONS[idx];
+        };
+        testImg.onerror = () => {
+          idx++;
+          attempt();
+        };
+        testImg.src = baseName + EXTENSIONS[idx];
+      }
+      attempt();
+    }
+
+    let isStarted = false;
+    let currentIndex = 0;
+    let isMoving = false;
+    let currentCamZ = 0;
+
+    startScreen.addEventListener('click', () => {
+      startScreen.classList.add('hidden');
+      isStarted = true;
+      audio.play().catch(e => console.log('Audio autoplay:', e));
+      goToStop(0);
+    });
+
+    function goToStop(index) {
+      if (index < 0 || index >= STORY_STOPS.length) return;
+      currentIndex = index;
+      isMoving = true;
+      photoCard.classList.remove('visible');
+
+      btnPrev.disabled = (currentIndex === 0);
+    }
+
+    btnNext.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentIndex < STORY_STOPS.length - 1) {
+        goToStop(currentIndex + 1);
+      } else {
+        photoCard.classList.remove('visible');
+        finalCta.classList.add('visible');
+      }
+    });
+
+    btnPrev.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (currentIndex > 0) {
+        goToStop(currentIndex - 1);
+      }
+    });
+
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const dt = clock.getDelta();
+
+      if (isStarted) {
+        petalGroup.children.forEach(p => {
+          p.position.z += 14 * dt;
+          p.position.x += p.userData.driftX;
+          p.position.y += p.userData.driftY;
+          p.material.rotation += p.userData.spin;
+          if (p.position.z > camera.position.z + 10) {
+            p.position.z -= 1450;
+          }
+        });
+
+        if (isMoving) {
+          const targetZ = STORY_STOPS[currentIndex].z;
+          currentCamZ += (targetZ - currentCamZ) * (1.5 * dt);
+          camera.position.z = currentCamZ;
+          camera.position.x = Math.sin(currentCamZ * 0.02) * 1.1;
+          camera.position.y = 1.0 + Math.cos(currentCamZ * 0.02) * 0.7;
+
+          if (Math.abs(currentCamZ - targetZ) < 0.8) {
+            isMoving = false;
+            setSafeImage(STORY_STOPS[currentIndex].photoBase);
+            storyText.textContent = STORY_STOPS[currentIndex].text;
+            photoCard.classList.add('visible');
+          }
+        } else {
+          const t = Date.now() * 0.001;
+          camera.position.x = Math.sin(t * 0.8) * 0.25;
+          camera.position.y = 1.0 + Math.cos(t * 0.6) * 0.2;
+        }
+
+        const pos = warpGeo.attributes.position.array;
+        for (let i = 0; i < warpCount; i++) {
+          pos[i * 6 + 2] += (isMoving ? 30 : 6) * dt;
+          pos[i * 6 + 5] += (isMoving ? 30 : 6) * dt;
+          if (pos[i * 6 + 2] > camera.position.z + 10) {
+            pos[i * 6 + 2] -= 1500;
+            pos[i * 6 + 5] -= 1500;
+          }
+        }
+        warpGeo.attributes.position.needsUpdate = true;
+      }
+
+      renderer.render(scene, camera);
+    }
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+</body>
+</html>
